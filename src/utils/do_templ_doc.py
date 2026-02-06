@@ -1,7 +1,12 @@
+from pathlib import Path
+
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement, ns
 from docx.shared import Cm, Pt
+
+from Configs import PathConfig
+from src.utils.docx_documents_utils import do_rulang_xml
 
 
 def do_template_docx():
@@ -29,15 +34,18 @@ def do_template_docx():
     ovio_header_style.font.size = Pt(12)
     styles.append(ovio_header_style)
 
+    reading_style = doc.styles.add_style('ReadingTask', WD_STYLE_TYPE.PARAGRAPH)
+    reading_style.font.name = 'Times New Roman'
+    reading_style.font.size = Pt(10)
+    styles.append(reading_style)
+
 
 
     # Заменяем язык на русский во всех стилях
     for style in styles:
-        lang = OxmlElement('w:lang')
-        lang.set(ns.qn('w:val'), 'ru-RU')
-        style._element.get_or_add_rPr().append(lang)
+        style._element.get_or_add_rPr().append(do_rulang_xml())
 
-    doc.save("../ETestTempl.docx")
+    doc.save(str(PathConfig.TEMPL_PATH))
 
 
 if __name__ == "__main__":

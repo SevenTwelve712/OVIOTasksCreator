@@ -26,6 +26,7 @@ class TourTemplate:
         self.form = form
         self.tour_date = tour_date
         self.place = place
+        self.doc = None
 
     def make_xml(self):
         pass
@@ -44,4 +45,4 @@ class TourTemplate:
         task_data = par.add_run(f'ЗАДАНИЕ "{task_name}"')
         task_data.italic = True
         task_data.add_break()
-        return doc
+        self.doc = doc

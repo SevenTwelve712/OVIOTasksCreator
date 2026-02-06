@@ -1,13 +1,11 @@
-from datetime import date
 from Configs import PathConfig
 from pathlib import Path
-
-from src.model.TourData import *
 
 from docx import Document
 
 from src.model.EruditionTest import EruditionTest
-from src.model.TourTemplate import TourTemplate
+from test import tour_templ_ex
+
 
 def test_erudition_test():
 
@@ -22,7 +20,7 @@ def test_erudition_test():
             "Самая крупная по площади в России заболоченная местность, по площади чуть меньшая Хорватии, расположенная в Томской, Омской и Новосибирской областях между реками Обь и Иртыш:": (["Васюганские болота", "Мшинское болото", "Сестрорецкое болото", "Старосельский мох"], 'A'),
             "Денежной единицей Древней Руси была гривна. По-древнерусски, считая деньги, можно было сказать, например, так: пол пяты гривны. Какое количество денег обозначалось таким способом?": (["Две с половиной гривны", "Одна десятая гривны", "Пять с половиной гривен", "Четыре с половиной гривны"], 'A')
         },
-        TourTemplate(Forms.OLD, Tours.FINAL, date(2023, 11, 4), "Москва")
+        tour_templ_ex
     )
     doc = test_task.make_docx(doc)
     last_p = len(doc.paragraphs) - 1
