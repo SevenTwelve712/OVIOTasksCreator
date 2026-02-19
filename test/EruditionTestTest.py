@@ -27,7 +27,7 @@ def test_erudition_test():
 
     print(f"Количество секций: {len(doc.sections)}")
     print(f"Количество параграфов: {len(doc.paragraphs)}")
-    print(f"Текст последнего параграфа: {doc.paragraphs[last_p].text}")
+    print(f"Текст последнего параграфа: {doc.paragraphs[last_p].TEXT}")
     print(f"Стиль последнего параграфа: {doc.paragraphs[last_p].style}")
 
     xml_path = Path(PathConfig.BASE_DIR, "test", "result_files", "ETestTest.xml")

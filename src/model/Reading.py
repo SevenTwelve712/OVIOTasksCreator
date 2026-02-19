@@ -1,11 +1,80 @@
 from docx import Document
 from docx.enum.section import WD_SECTION
-from docx.oxml import OxmlElement, ns
+from docx.shared import Pt, Emu
 
 from src.model.TourTemplate import TourTemplate
+from src.model.docx_extended_utils.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes, ExtendedCell
 from src.utils.docx_documents_utils import set_cols
 
 from random import shuffle
+
+
+class ReadingTable1Task:
+    def __init__(self, doc: Document, words: list[str], preferred_font_size: int):
+        """
+        Реализует класс для удобной работы с объектом таблицы из первого задания для чтения. Она состоит из 1 строки и
+        нескольких столбцов (по количеству слов), в каждой ячейке находится одно слово
+        :param doc: Документ, в который должна быть добавлена таблица.
+        :param words: Слова, которые должны находиться в таблице
+        :param preferred_font_size: Предпочитаемый размер шрифта (может быть уменьшен)
+        """
+        if preferred_font_size not in [8, 10, 12]:
+            raise ValueError("Размер шрифта должен быть 8, 10 или 12")
+
+        self.ext_table = None
+        self._table = None
+        self.doc = doc
+        self.words = words
+        self.font_size = preferred_font_size
+        self.default_table_width = self._calc_document_text_area_width()
+
+    def create_table(self):
+        """Добавляет саму таблицу в конец документа"""
+        table = self.doc.add_table(1, len(self.words))
+        self.ext_table = ExtendedTable(table)
+        self._table = table
+
+    def _calc_document_text_area_width(self):
+        """Считает ширину текстового поля документа (для того, чтобы заполнить таблицу на всю ширину), возвращает ответ в dxa"""
+        section = self.doc.sections[-1]
+        return Emu(section.page_width - section.left_margin - section.right_margin).pt * 20
+
+    def fill_words(self, bold: bool=False):
+        """Заполняет таблицу заданными словами"""
+        if self._table is None:
+            raise RuntimeError("Таблица еще не создана")
+        for i, cell in enumerate(self._table._cells):
+            run = cell.paragraphs[0].add_run()
+            run.text = f"{i}. {self.words[i]}"
+            run.bold = bold
+            run.font.size = Pt(self.font_size)
+            run.font.name = "Times New Roman"
+
+    def set_preferred_grid_cols_widths(self):
+        """Задает предпочитаемую ширину для колонок"""
+        grid_widths = [Pt(self.calc_min_cell_width(word)).twips for word in self.words]
+        self.ext_table.set_grids(grid_widths)
+
+    def calc_min_cell_width(self, text: str) -> float:
+        """Считает примерную максимальную достижимую ширину ячейки в dxa (twips), учитывая шрифт (Times New Roman) и его размер, цифра получается очень приблизительная,
+        она получена эмпирическим опытом"""
+        if self.font_size == 8:
+            return (len(text) * 59 + 75) / 7 * 20
+        elif self.font_size == 10:
+            return (75 + 73 * len(text)) / 7 * 20
+        else:
+            return (75 + 87 * len(text)) / 7 * 20
+
+    def normalize_widths(self) -> bool:
+        """Пытается нормализовать ширину таблицы: выставляет фиксированную ширину таблицы,
+        задает предпочитаемые ширину колонок, устанавливает автоматическое распределение ширины"""
+        self.ext_table.set_layout(LayoutTypes.AUTOFIT)
+        self.ext_table.set_width(WidthTypes.DXA, width=self.default_table_width)
+        self.set_preferred_grid_cols_widths()
+        # for i, cell in enumerate(self._table._cells):
+        #     min_cell_width_twips = int(self.calc_min_cell_width(self.words[i]) * 20)
+        #     ExtendedCell(cell).set_width(WidthTypes.DXA, min_cell_width_twips)
+        return True
 
 
 class Reading:
@@ -51,14 +120,14 @@ class Reading:
 
         f_task_cond = doc.add_table(rows=1, cols=len(self.matches))
         for i, key in enumerate(self.matches.keys()):
-            f_task_cond.cell(0, i).text = f"{i + 1}. {key.capitalize()}"
+            f_task_cond.cell(0, i).TEXT = f"{i + 1}. {key.capitalize()}"
 
         f_task_solution = doc.add_table(rows=2, cols = len(self.matches))
         match_items = list(self.matches.values())
         shuffle(match_items)
 
         for i, item in enumerate(match_items):
-            f_task_solution.cell(0, i).text = item.upper()
+            f_task_solution.cell(0, i).TEXT = item.upper()
 
         # 2 задание
         s_task_par = doc.add_paragraph(style="ReadingTask")
@@ -66,7 +135,7 @@ class Reading:
         s_task = doc.add_table(rows=len(self.questions), cols=2)
 
         for i, question in enumerate(self.questions):
-            s_task.cell(0, i).text = f"2.{i}. {question}"
+            s_task.cell(0, i).TEXT = f"2.{i}. {question}"
 
         # 3 задание
         t_task_par = doc.add_paragraph(style="ReadingTask")
