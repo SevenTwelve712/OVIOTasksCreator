@@ -49,5 +49,4 @@ def test_reading():
 
 
 if __name__ == '__main__':
-    # test_reading()
-    pass
+    test_reading()

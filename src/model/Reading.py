@@ -3,14 +3,16 @@ from docx.enum.section import WD_SECTION
 from docx.shared import Pt, Emu
 
 from src.model.TourTemplate import TourTemplate
-from src.model.docx_extended_utils.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes, ExtendedCell
-from src.utils.docx_documents_utils import set_cols
+from src.model.extended_docx_classes.ExtendedSection import ExtendedSection
+from src.model.extended_docx_classes.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes
 
 from random import shuffle
 
+from src.model.extended_docx_classes.ExtendedRun import ExtendedRun
+
 
 class ReadingTable1Task:
-    def __init__(self, doc: Document, words: list[str], preferred_font_size: int):
+    def __init__(self, doc: Document, rows: int,  words: list[str], preferred_font_size: int, layout: LayoutTypes):
         """
         Реализует класс для удобной работы с объектом таблицы из первого задания для чтения. Она состоит из 1 строки и
         нескольких столбцов (по количеству слов), в каждой ячейке находится одно слово
@@ -27,23 +29,25 @@ class ReadingTable1Task:
         self.words = words
         self.font_size = preferred_font_size
         self.default_table_width = self._calc_document_text_area_width()
+        self.layout = layout
+        self.rows = rows
 
     def create_table(self):
         """Добавляет саму таблицу в конец документа"""
-        table = self.doc.add_table(1, len(self.words))
+        table = self.doc.add_table(self.rows, len(self.words))
         self.ext_table = ExtendedTable(table)
         self._table = table
 
     def _calc_document_text_area_width(self):
         """Считает ширину текстового поля документа (для того, чтобы заполнить таблицу на всю ширину), возвращает ответ в dxa"""
-        section = self.doc.sections[-1]
-        return Emu(section.page_width - section.left_margin - section.right_margin).pt * 20
+        emu_width = ExtendedSection(self.doc.sections[-1]).get_text_area_width()
+        return Emu(emu_width).pt * 20
 
     def fill_words(self, bold: bool=False):
         """Заполняет таблицу заданными словами"""
         if self._table is None:
             raise RuntimeError("Таблица еще не создана")
-        for i, cell in enumerate(self._table._cells):
+        for i, cell in enumerate(self._table.rows[0].cells):
             run = cell.paragraphs[0].add_run()
             run.text = f"{i}. {self.words[i]}"
             run.bold = bold
@@ -65,16 +69,15 @@ class ReadingTable1Task:
         else:
             return (75 + 87 * len(text)) / 7 * 20
 
-    def normalize_widths(self) -> bool:
+    def normalize_widths(self):
         """Пытается нормализовать ширину таблицы: выставляет фиксированную ширину таблицы,
         задает предпочитаемые ширину колонок, устанавливает автоматическое распределение ширины"""
-        self.ext_table.set_layout(LayoutTypes.AUTOFIT)
-        self.ext_table.set_width(WidthTypes.DXA, width=self.default_table_width)
-        self.set_preferred_grid_cols_widths()
-        # for i, cell in enumerate(self._table._cells):
-        #     min_cell_width_twips = int(self.calc_min_cell_width(self.words[i]) * 20)
-        #     ExtendedCell(cell).set_width(WidthTypes.DXA, min_cell_width_twips)
-        return True
+        if self.layout is LayoutTypes.AUTOFIT:
+            self.ext_table.set_layout(LayoutTypes.AUTOFIT)
+            self.ext_table.set_width(WidthTypes.DXA, width=self.default_table_width)
+            self.set_preferred_grid_cols_widths()
+        else:
+            raise ValueError("Реализация для фиксированного layout еще не написана")
 
 
 class Reading:
@@ -108,31 +111,39 @@ class Reading:
 
         # Добавляем секцию текста
         text_sec = doc.add_section(WD_SECTION.CONTINUOUS)
-        set_cols(text_sec, 2)
-        doc.add_paragraph(self.text, style="ReadingTask")
+        ExtendedSection(text_sec).set_cols(2)
+        text_par = doc.add_paragraph(self.text, style="ReadingTask")
+        for run in text_par.runs:
+            ExtendedRun(run).set_spacing(-2)
 
         tasks_sec = doc.add_section(WD_SECTION.CONTINUOUS)
-        set_cols(tasks_sec, 1)
+        ExtendedSection(tasks_sec).set_cols(1)
 
         # 1 задание
         f_task_par = doc.add_paragraph(style="ReadingTask")
         f_task_par.add_run("1. Заполните таблицу. Под каждым словом запишите НОМЕР соответствующего ему слова из списка (по 1 баллу за соответствие):").bold = True
 
-        f_task_cond = doc.add_table(rows=1, cols=len(self.matches))
-        for i, key in enumerate(self.matches.keys()):
-            f_task_cond.cell(0, i).TEXT = f"{i + 1}. {key.capitalize()}"
+        f_task_cond = ReadingTable1Task(doc, 1, list(self.matches.keys()), 10, LayoutTypes.AUTOFIT)
+        f_task_cond.create_table()
+        f_task_cond.fill_words()
+        f_task_cond.normalize_widths()
 
-        f_task_solution = doc.add_table(rows=2, cols = len(self.matches))
         match_items = list(self.matches.values())
         shuffle(match_items)
 
-        for i, item in enumerate(match_items):
-            f_task_solution.cell(0, i).TEXT = item.upper()
+        f_task_solution = ReadingTable1Task(doc, 2, match_items, 10, LayoutTypes.AUTOFIT)
+        f_task_solution.create_table()
+        f_task_solution.fill_words()
+        f_task_solution.normalize_widths()
 
         # 2 задание
         s_task_par = doc.add_paragraph(style="ReadingTask")
         s_task_par.add_run("2. Заполните таблицу (по 2 балла за правильное заполнение. Слова должны быть написаны без ошибок):").bold = True
+
         s_task = doc.add_table(rows=len(self.questions), cols=2)
+        dxa_width = Emu(ExtendedSection(doc.sections[-1]).get_text_area_width()).pt * 20
+        grids = [dxa_width * 2 / 3, dxa_width / 3]
+        ExtendedTable(s_task).set_grids(grids)
 
         for i, question in enumerate(self.questions):
             s_task.cell(0, i).TEXT = f"2.{i}. {question}"
