@@ -1,4 +1,4 @@
 .idea/
 /__pycache__
 src/help_scripts
-**/__pycache__
+**/__pycache__/
