@@ -81,14 +81,13 @@ picture_xml = f"""<w:p {nsdecls('w', 'wp', 'r')}>
 
 
 def do_template_docx():
-    doc = Document()
-
-    doc.add_picture(str(Path(PathConfig.RESOURCES_DIR, "logo.tif")), width=Inches(2))
-    pic = doc._element.body.find(qn("w:p"))
-    doc._element.body.remove(pic)
-
-    picture = parse_xml(picture_xml)
-    doc._element.body.insert(0, picture)
+    doc = Document(str(Path(PathConfig.RESOURCES_DIR, "BaseTempl.docx")))
+    # doc.add_picture(str(Path(PathConfig.RESOURCES_DIR, "logo.tif")), width=Inches(2))
+    # pic = doc._element.body.find(qn("w:p"))
+    # doc._element.body.remove(pic)
+    #
+    # picture = parse_xml(picture_xml)
+    # doc._element.body.insert(0, picture)
 
     section = doc.sections[0]
 
@@ -103,21 +102,31 @@ def do_template_docx():
     styles = []
 
     # Стили
-    e_test_style = doc.styles.add_style('ETestTask', WD_STYLE_TYPE.PARAGRAPH)
-    e_test_style.font.name = 'Times New Roman'
-    e_test_style.font.size = Pt(10)
-    styles.append(e_test_style)
+    if 'ETestTask' not in doc.styles:
+        e_test_style = doc.styles.add_style('ETestTask', WD_STYLE_TYPE.PARAGRAPH)
+        e_test_style.font.name = 'Times New Roman'
+        e_test_style.font.size = Pt(10)
+        styles.append(e_test_style)
 
-    ovio_header_style = doc.styles.add_style('OVIOHeader', WD_STYLE_TYPE.PARAGRAPH)
-    ovio_header_style.font.name = 'Times New Roman'
-    ovio_header_style.font.size = Pt(12)
-    styles.append(ovio_header_style)
+    if 'OVIOHeader' not in doc.styles:
+        ovio_header_style = doc.styles.add_style('OVIOHeader', WD_STYLE_TYPE.PARAGRAPH)
+        ovio_header_style.font.name = 'Times New Roman'
+        ovio_header_style.font.size = Pt(12)
+        styles.append(ovio_header_style)
 
-    reading_style = doc.styles.add_style('ReadingTask', WD_STYLE_TYPE.PARAGRAPH)
-    reading_style.base_style = doc.styles["No Spacing"]
-    reading_style.font.name = 'Times New Roman'
-    reading_style.font.size = Pt(10)
-    styles.append(reading_style)
+    if "No Spacing" not in doc.styles:
+        style = doc.styles.add_style("No Spacing", WD_STYLE_TYPE.PARAGRAPH)
+        style.base_style = doc.styles["Normal"]
+
+        style.paragraph_format.space_before = 0
+        style.paragraph_format.space_after = 0
+
+    if 'ReadingTask' not in doc.styles:
+        reading_style = doc.styles.add_style('ReadingTask', WD_STYLE_TYPE.PARAGRAPH)
+        reading_style.base_style = doc.styles["No Spacing"]
+        reading_style.font.name = 'Times New Roman'
+        reading_style.font.size = Pt(10)
+        styles.append(reading_style)
 
 
 
@@ -133,4 +142,4 @@ def _get_basedoc_xml():
 
 if __name__ == "__main__":
     do_template_docx()
-    _get_basedoc_xml()
+    # _get_basedoc_xml()

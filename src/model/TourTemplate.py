@@ -2,6 +2,7 @@ from docx.document import Document
 from datetime import date
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from model.extended_docx_classes.ExtendedSection import ExtendedSection
 from src.model.TourData import Forms, Tours
 
 
@@ -32,6 +33,11 @@ class TourTemplate:
         pass
 
     def make_docx(self, doc: Document, task_name: str):
+        # TODO: разобраться, тут ли надо проставлять размер секции
+        ExtendedSection(doc.sections[0]).set_size_a4()
+        if len(doc.paragraphs) == 0:
+            doc.add_paragraph()
+
         par = doc.paragraphs[0]
         par.style = "OVIOHeader"
         par.alignment = WD_ALIGN_PARAGRAPH.CENTER

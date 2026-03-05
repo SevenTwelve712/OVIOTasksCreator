@@ -2,6 +2,7 @@ from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.shared import Pt, Emu
 
+from model.extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
 from src.model.TourTemplate import TourTemplate
 from src.model.extended_docx_classes.ExtendedSection import ExtendedSection
 from src.model.extended_docx_classes.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes
@@ -106,18 +107,31 @@ class Reading:
         pass
 
     def make_docx(self, doc: Document):
+        PG_MAR = {"top": 284, "bottom": 720, "left": 720, "right": 720, "header": 708, "footer": 339, "gutter": 0}
+
         self.tour_templ.make_docx(doc, self.name)
         doc = self.tour_templ.doc
+        ExtendedSection(doc.sections[0]).set_margins(*PG_MAR.values())
 
         # Добавляем секцию текста
+        PG_MAR["right"] = PG_MAR["left"] = 424
         text_sec = doc.add_section(WD_SECTION.CONTINUOUS)
-        ExtendedSection(text_sec).set_cols(2)
+        extended_first = ExtendedSection(text_sec)
+        extended_first.set_cols(2)
+        extended_first.set_size_a4()
+        extended_first.set_margins(*PG_MAR.values())
+
         text_par = doc.add_paragraph(self.text, style="ReadingTask")
+        ExtendedParagraph(text_par).set_jc(JcTypes.BOTH)
         for run in text_par.runs:
             ExtendedRun(run).set_spacing(-2)
 
+        # добавляем секцию заданий
+        PG_MAR["left"] = PG_MAR["right"] = 720
+        PG_MAR["top"] = 284
         tasks_sec = doc.add_section(WD_SECTION.CONTINUOUS)
         ExtendedSection(tasks_sec).set_cols(1)
+        ExtendedSection(tasks_sec).set_size_a4()
 
         # 1 задание
         f_task_par = doc.add_paragraph(style="ReadingTask")
@@ -126,7 +140,8 @@ class Reading:
         f_task_cond = ReadingTable1Task(doc, 1, list(self.matches.keys()), 10, LayoutTypes.AUTOFIT)
         f_task_cond.create_table()
         f_task_cond.fill_words()
-        f_task_cond.normalize_widths()
+        # TODO: функция normalize_widths() возвращает совсем уж некорректные значения, разобраться с этим
+        # f_task_cond.normalize_widths()
 
         match_items = list(self.matches.values())
         shuffle(match_items)
@@ -134,7 +149,7 @@ class Reading:
         f_task_solution = ReadingTable1Task(doc, 2, match_items, 10, LayoutTypes.AUTOFIT)
         f_task_solution.create_table()
         f_task_solution.fill_words()
-        f_task_solution.normalize_widths()
+        # f_task_solution.normalize_widths()
 
         # 2 задание
         s_task_par = doc.add_paragraph(style="ReadingTask")
