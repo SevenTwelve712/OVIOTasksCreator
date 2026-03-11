@@ -1,11 +1,14 @@
+from operator import truediv
+
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.shared import Pt, Emu
 
+from model.extended_docx_classes.ExtendedCell import ExtendedCell
 from model.extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
 from src.model.TourTemplate import TourTemplate
 from src.model.extended_docx_classes.ExtendedSection import ExtendedSection
-from src.model.extended_docx_classes.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes
+from src.model.extended_docx_classes.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes, TblBorder
 
 from random import shuffle
 
@@ -83,6 +86,7 @@ class ReadingTable1Task:
 
 class Reading:
     name = "Чтение"
+    cond = "Познакомьтесь с текстом и выполните задания"
 
     def __init__(self, tour_templ: TourTemplate, text: str, matches: dict[str, str], questions: list[str], word: tuple[str, str], mistake_words: tuple[str, str]):
         """
@@ -107,71 +111,178 @@ class Reading:
         pass
 
     def make_docx(self, doc: Document):
-        PG_MAR = {"top": 284, "bottom": 720, "left": 720, "right": 720, "header": 708, "footer": 339, "gutter": 0}
+        PG_MAR_HEADER = {"top": 250, "bottom": 250, "left": 720, "right": 720, "header": 708, "footer": 339, "gutter": 0}
+        PG_MAR_TEXT = {"top": 250, "bottom": 250, "left": 400, "right": 400, "header": 708, "footer": 339, "gutter": 0}
+        PG_MAR_TASKS = {"top": 250, "bottom": 250, "left": 720, "right": 720, "header": 708, "footer": 339, "gutter": 0}
 
-        self.tour_templ.make_docx(doc, self.name)
+        TEXT_INDENT = 100
+        TASK_INDENT = 300
+
+        SMALL_SPACING = Pt(3)
+
+        PAR_STYLE = "ReadingTask"
+
+        self.tour_templ.make_docx(doc, self.name, self.cond)
         doc = self.tour_templ.doc
-        ExtendedSection(doc.sections[0]).set_margins(*PG_MAR.values())
+        ExtendedSection(doc.sections[0]).set_margins(*PG_MAR_HEADER.values())
+        ExtendedParagraph(doc.paragraphs[0]).set_spacing(after=0)
 
+        #========================================
         # Добавляем секцию текста
-        PG_MAR["right"] = PG_MAR["left"] = 424
         text_sec = doc.add_section(WD_SECTION.CONTINUOUS)
+
         extended_first = ExtendedSection(text_sec)
-        extended_first.set_cols(2)
+        extended_first.set_cols(2, space=500)
         extended_first.set_size_a4()
-        extended_first.set_margins(*PG_MAR.values())
+        extended_first.set_margins(*PG_MAR_TEXT.values())
 
         text_par = doc.add_paragraph(self.text, style="ReadingTask")
-        ExtendedParagraph(text_par).set_jc(JcTypes.BOTH)
+
+        ext_text_par = ExtendedParagraph(text_par)
+        ext_text_par.set_indent(left=TEXT_INDENT, first_line=107)
+        ext_text_par.set_jc(JcTypes.BOTH)
+        ext_text_par.rm_spacings()
+
         for run in text_par.runs:
             ExtendedRun(run).set_spacing(-2)
 
+        # ========================================
         # добавляем секцию заданий
-        PG_MAR["left"] = PG_MAR["right"] = 720
-        PG_MAR["top"] = 284
         tasks_sec = doc.add_section(WD_SECTION.CONTINUOUS)
+
         ExtendedSection(tasks_sec).set_cols(1)
         ExtendedSection(tasks_sec).set_size_a4()
 
+        # ========================================
         # 1 задание
         f_task_par = doc.add_paragraph(style="ReadingTask")
+
+        ext_f_task_par = ExtendedParagraph(f_task_par)
+        ext_f_task_par.set_jc(JcTypes.BOTH)
+        ext_f_task_par.set_indent(TASK_INDENT, TASK_INDENT, 0)
+        ext_f_task_par.set_spacing(before=SMALL_SPACING, after=SMALL_SPACING)
+
         f_task_par.add_run("1. Заполните таблицу. Под каждым словом запишите НОМЕР соответствующего ему слова из списка (по 1 баллу за соответствие):").bold = True
 
-        f_task_cond = ReadingTable1Task(doc, 1, list(self.matches.keys()), 10, LayoutTypes.AUTOFIT)
-        f_task_cond.create_table()
-        f_task_cond.fill_words()
-        # TODO: функция normalize_widths() возвращает совсем уж некорректные значения, разобраться с этим
-        # f_task_cond.normalize_widths()
+        # Создаем таблицу со словами
+        f_task_cond = doc.add_table(rows=1, cols=len(self.matches), style="Table Grid")
+        for i, word, cell in zip(range(0, len(self.matches)), self.matches, f_task_cond.rows[0].cells):
+            par = cell.paragraphs[0]
 
-        match_items = list(self.matches.values())
-        shuffle(match_items)
+            ExtendedParagraph(par).set_spacing(after=SMALL_SPACING)
+            ExtendedParagraph(par).set_jc(JcTypes.CENTER)
+            par.style = PAR_STYLE
 
-        f_task_solution = ReadingTable1Task(doc, 2, match_items, 10, LayoutTypes.AUTOFIT)
-        f_task_solution.create_table()
-        f_task_solution.fill_words()
-        # f_task_solution.normalize_widths()
+            par.add_run(f"{i + 1}. {word}")
 
+        f_task_cond_ext = ExtendedTable(f_task_cond)
+        f_task_cond_ext.set_borders(TblBorder())
+        f_task_cond_ext.set_indent(TASK_INDENT)
+        f_task_cond_ext.set_jc(JcTypes.CENTER)
+
+        # Создаем таблицу с ассоциациями
+        associations = list(self.matches.values())
+        shuffle(associations)
+
+        f_task_solution = doc.add_table(rows=2, cols=len(associations))
+        for association, cell in zip(associations, f_task_solution.rows[0].cells):
+            par = cell.paragraphs[0]
+
+            ExtendedParagraph(par).set_jc(JcTypes.CENTER)
+            par.style = PAR_STYLE
+
+            cell.paragraphs[0].add_run(f"{association.upper()}")
+
+        for cell in f_task_solution._cells:
+            ExtendedParagraph(cell.paragraphs[0]).rm_spacings()
+
+        tbl_borders = TblBorder(sz=4, val="single")
+        f_task_solution_ext = ExtendedTable(f_task_solution)
+        f_task_solution_ext.set_borders(tbl_borders)
+        f_task_solution_ext.set_indent(TASK_INDENT)
+        f_task_solution_ext.set_jc(JcTypes.CENTER)
+        f_task_solution_ext.set_cell_spacing(15)
+        f_task_solution_ext.set_all_cells_borders(tbl_borders)
+
+        # ========================================
         # 2 задание
+        S_TASK_ROWS = len(self.questions)
+        S_TASK_COLS = 2
+
         s_task_par = doc.add_paragraph(style="ReadingTask")
+
+        ext_s_task_par = ExtendedParagraph(s_task_par)
+        ext_s_task_par.set_jc(JcTypes.BOTH)
+        ext_s_task_par.set_indent(TASK_INDENT, TASK_INDENT, 0)
+        ext_s_task_par.set_spacing(before=SMALL_SPACING, after=SMALL_SPACING)
+
         s_task_par.add_run("2. Заполните таблицу (по 2 балла за правильное заполнение. Слова должны быть написаны без ошибок):").bold = True
 
-        s_task = doc.add_table(rows=len(self.questions), cols=2)
+        s_task = doc.add_table(rows=S_TASK_ROWS, cols=S_TASK_COLS)
         dxa_width = Emu(ExtendedSection(doc.sections[-1]).get_text_area_width()).pt * 20
-        grids = [dxa_width * 2 / 3, dxa_width / 3]
-        ExtendedTable(s_task).set_grids(grids)
+        print(dxa_width)
+        grids = [int(dxa_width * 3 / 4), int(dxa_width / 4)]
+        print(grids)
 
-        for i, question in enumerate(self.questions):
-            s_task.cell(0, i).TEXT = f"2.{i}. {question}"
+        s_task_ext = ExtendedTable(s_task)
 
+        s_task_ext.set_layout(LayoutTypes.FIXED)
+        s_task_ext.set_grids(grids)
+
+        s_task_ext.set_borders(tbl_borders)
+        s_task_ext.set_indent(TASK_INDENT)
+        s_task_ext.set_jc(JcTypes.CENTER)
+        s_task_ext.set_cell_spacing(15)
+
+        for i, (question, cell) in enumerate(zip(self.questions, s_task.column_cells(0))):
+            par = cell.paragraphs[0]
+            par.add_run(f"2.{i}. {question}")
+            par.style = PAR_STYLE
+
+        for cell in s_task._cells:
+            ExtendedCell(cell).set_width(WidthTypes.AUTO)
+
+        s_task_ext.rm_spacings_in_cells()
+        s_task_ext.set_all_cells_borders(tbl_borders)
+
+        # ========================================
         # 3 задание
         t_task_par = doc.add_paragraph(style="ReadingTask")
-        t_task_par.add_run("3. Определите слово по описанию (2 балла). Это слово обязательно должно быть в тексте.").bold = True
+
+        ext_t_task_par = ExtendedParagraph(t_task_par)
+        ext_t_task_par.set_jc(JcTypes.BOTH)
+        ext_t_task_par.set_indent(TASK_INDENT, TASK_INDENT, 0)
+        ext_t_task_par.set_spacing(before=SMALL_SPACING, after=SMALL_SPACING)
+
+        r = t_task_par.add_run("3. Определите слово по описанию (2 балла). Это слово обязательно должно быть в тексте.")
+        r.bold = True
+        r.add_break()
         t_task_par.add_run(f"{'_' * int(len(self.word[0]) / 0.7)} — {self.word[1]} ({len(self.word[0])} букв)")
 
+        # ========================================
         # 4 задание
         fo_task_par = doc.add_paragraph(style="ReadingTask")
+
+        ext_fo_task_par = ExtendedParagraph(fo_task_par)
+        ext_fo_task_par.set_jc(JcTypes.BOTH)
+        ext_fo_task_par.set_indent(TASK_INDENT, TASK_INDENT, 0)
+        ext_fo_task_par.set_spacing(SMALL_SPACING, SMALL_SPACING)
+
         fo_task_par.add_run("4. Найдите в тексте ошибочное слово и замените его на верное (найденное – 1 балл, правильная замена – 1 балл):").bold = True
+
         fo_task = doc.add_table(rows=2, cols=2)
-        fo_task.cell(0, 0).paragraphs[0].add_run("Ошибочное").bold = True
-        fo_task.cell(0, 1).paragraphs[0].add_run(f"Правильное ({len(self.mistake_words[1])} букв)").bold = True
+
+        ext_fo_task = ExtendedTable(fo_task)
+        ext_fo_task.set_indent(TASK_INDENT)
+        ext_fo_task.set_jc(JcTypes.CENTER)
+        ext_fo_task.set_borders(tbl_borders)
+
+        for word, cell in zip(("Ошибочное", f"Правильное ({len(self.mistake_words[1])} букв)"), fo_task.row_cells(0)):
+            par = cell.paragraphs[0]
+            par.style = PAR_STYLE
+            par.add_run(word).bold = True
+            ExtendedParagraph(par).set_jc(JcTypes.CENTER)
+
+        ext_fo_task.rm_spacings_in_cells()
+
         self.doc = doc

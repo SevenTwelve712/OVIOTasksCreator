@@ -49,5 +49,5 @@ def test_reading():
 if __name__ == '__main__':
     SAVE_PATH = str(Path(PathConfig.SAVE_DIR, "ReadingTest.docx"))
     extract_document_xml(str(PathConfig.BASE_DIR) + '\\example_tasks\\reading.docx', PathConfig.SAVE_DIR)
-    extract_document_xml(SAVE_PATH, PathConfig.SAVE_DIR)
+    # extract_document_xml(SAVE_PATH, PathConfig.SAVE_DIR)
     test_reading()

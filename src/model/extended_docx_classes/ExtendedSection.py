@@ -12,12 +12,15 @@ class ExtendedSection:
         """Возвращает ширину поля, где пишется текст в EMU"""
         return self.section.page_width - self.section.left_margin - self.section.right_margin
 
-    def set_cols(self, num: int):
+    def set_cols(self, num: int, space: int=None):
+        """Определяет настройки колонок в секции: количество и отступ между ними, отступ задается в pt"""
         cols = self.sectPr.find(qn('w:cols'))
         if cols is None:
             cols = OxmlElement('w:cols')
             self.sectPr.append(cols)
         cols.set(qn('w:num'), str(num))
+        if space is not None:
+            cols.set(qn('w:space'), str(space))
 
     def set_size(self, width: int, height: int):
         pgSz = self.sectPr.find(qn('w:pgSz'))

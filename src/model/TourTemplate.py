@@ -1,6 +1,7 @@
 from docx.document import Document
 from datetime import date
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt
 
 from model.extended_docx_classes.ExtendedSection import ExtendedSection
 from src.model.TourData import Forms, Tours
@@ -32,7 +33,7 @@ class TourTemplate:
     def make_xml(self):
         pass
 
-    def make_docx(self, doc: Document, task_name: str):
+    def make_docx(self, doc: Document, task_name: str, task_cond: str):
         # TODO: разобраться, тут ли надо проставлять размер секции
         ExtendedSection(doc.sections[0]).set_size_a4()
         if len(doc.paragraphs) == 0:
@@ -42,13 +43,19 @@ class TourTemplate:
         par.style = "OVIOHeader"
         par.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        par.add_run(f'{self.tour.value} ОВИО "Наше наследие" среди {self.form.value} классов, ').bold = True
+        header = par.add_run("Открытая всероссийская интеллектуальная олимпиада «Наше наследие»")
+        header.bold = True
+        header.add_break()
+        par.add_run(f"{self.tour.value} {self.tour_date.year}/{self.tour_date.year + 1} ({self.form.value} классы)").add_break()
 
-        datetime_data = par.add_run(f"{self.tour_date.day} {self.months[self.tour_date.month]} {self.tour_date.year}, {self.place}")
-        datetime_data.italic = True
-        datetime_data.add_break()
 
-        task_data = par.add_run(f'ЗАДАНИЕ "{task_name}"')
-        task_data.italic = True
-        task_data.add_break()
+        # datetime_data = par.add_run(f"{self.tour_date.day} {self.months[self.tour_date.month]} {self.tour_date.year}, {self.place}")
+        # datetime_data.italic = True
+        # datetime_data.add_break()
+
+        par.add_run(f'ЗАДАНИЕ "{task_name}".').font.size = Pt(10)
+        cond = par.add_run(task_cond)
+        cond.bold = True
+        cond.font.size = Pt(10)
+        # cond.add_break()
         self.doc = doc
