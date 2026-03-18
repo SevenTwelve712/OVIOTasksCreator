@@ -5,9 +5,9 @@ from pathlib import Path
 
 from docx.oxml import OxmlElement, ns
 
+from model.extended_docx_classes.ExtendedSection import ExtendedSection
 from src.model.Task import Task
 from src.model.TourTemplate import TourTemplate
-from src.utils.docx_documents_utils import set_cols
 
 
 class EruditionTest(Task):
@@ -29,12 +29,12 @@ class EruditionTest(Task):
 
     def make_docx(self, doc: Document):
         letters = ['А', 'Б', 'В', 'Г']
-        self.template.make_docx(doc, self.name)
+        self.template.make_docx(doc, self.name, "")
         doc = self.template.doc
 
         # Добавляем главную секцию с колонками
         main_sec = doc.add_section(WD_SECTION.CONTINUOUS)
-        set_cols(main_sec, 3)
+        ExtendedSection(main_sec).set_cols(3)
 
         num = 0
         for question, answers_ in self.questions.items():

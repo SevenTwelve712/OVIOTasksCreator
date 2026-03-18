@@ -22,12 +22,13 @@ def test_erudition_test():
         },
         tour_templ_ex
     )
-    doc = test_task.make_docx(doc)
+    test_task.make_docx(doc)
+    doc = test_task.doc
     last_p = len(doc.paragraphs) - 1
 
     print(f"Количество секций: {len(doc.sections)}")
     print(f"Количество параграфов: {len(doc.paragraphs)}")
-    print(f"Текст последнего параграфа: {doc.paragraphs[last_p].TEXT}")
+    print(f"Текст последнего параграфа: {doc.paragraphs[last_p].text}")
     print(f"Стиль последнего параграфа: {doc.paragraphs[last_p].style}")
 
     xml_path = Path(PathConfig.BASE_DIR, "test", "result_files", "ETestTest.xml")
