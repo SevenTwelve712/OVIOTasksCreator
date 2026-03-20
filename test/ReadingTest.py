@@ -3,7 +3,7 @@ from pathlib import Path
 from docx import Document
 
 from Configs import PathConfig
-from help_scripts.extract_xml import extract_document_xml
+from src.help_scripts.extract_xml import extract_doc_xml
 from src.model.Reading import Reading
 from test import tour_templ_ex
 
@@ -47,7 +47,7 @@ def test_reading():
 
 
 if __name__ == '__main__':
-    SAVE_PATH = str(Path(PathConfig.SAVE_DIR, "ReadingTest.docx"))
-    extract_document_xml(str(PathConfig.BASE_DIR) + '\\example_tasks\\reading.docx', PathConfig.SAVE_DIR)
-    # extract_document_xml(SAVE_PATH, PathConfig.SAVE_DIR)
+    SAVE_PATH = Path(PathConfig.SAVE_DIR, "ReadingTest.docx")
     test_reading()
+    extract_doc_xml(Path(PathConfig.BASE_DIR, "example_tasks", "reading.docx"), PathConfig.SAVE_DIR)
+    extract_doc_xml(SAVE_PATH, PathConfig.SAVE_DIR)

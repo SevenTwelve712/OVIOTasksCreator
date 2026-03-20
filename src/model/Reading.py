@@ -1,18 +1,16 @@
-from operator import truediv
+from random import shuffle
 
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.shared import Pt, Emu
 
-from model.extended_docx_classes.ExtendedCell import ExtendedCell
-from model.extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
-from src.model.TourTemplate import TourTemplate
-from src.model.extended_docx_classes.ExtendedSection import ExtendedSection
-from src.model.extended_docx_classes.ExtendedTable import ExtendedTable, LayoutTypes, WidthTypes, TblBorder
-
-from random import shuffle
-
-from src.model.extended_docx_classes.ExtendedRun import ExtendedRun
+from TourTemplate import TourTemplate
+from extended_docx_classes.ExtendedCell import ExtendedCell
+from extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
+from extended_docx_classes.ExtendedSection import ExtendedSection
+from extended_docx_classes.ExtendedTable import ExtendedTable
+from extended_docx_classes.TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
+from extended_docx_classes.ExtendedRun import ExtendedRun
 
 
 class ReadingTable1Task:

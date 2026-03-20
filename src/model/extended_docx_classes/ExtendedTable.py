@@ -1,13 +1,11 @@
-from docx.oxml import OxmlElement, CT_Tc
-from docx.shared import Pt, Emu
-from docx.table import Table, _Cell
-from enum import Enum
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from dataclasses import dataclass
+from docx.shared import Pt
+from docx.table import Table
 
-from model.extended_docx_classes.ExtendedCell import ExtendedCell
-from model.extended_docx_classes.ExtendedParagraph import JcTypes, ExtendedParagraph
-from model.extended_docx_classes.TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
+from ExtendedCell import ExtendedCell
+from ExtendedParagraph import JcTypes, ExtendedParagraph
+from TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
 
 
 class ExtendedTable:
