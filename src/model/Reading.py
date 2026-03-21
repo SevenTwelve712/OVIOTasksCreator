@@ -4,13 +4,14 @@ from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.shared import Pt, Emu
 
-from TourTemplate import TourTemplate
-from extended_docx_classes.ExtendedCell import ExtendedCell
-from extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
-from extended_docx_classes.ExtendedSection import ExtendedSection
-from extended_docx_classes.ExtendedTable import ExtendedTable
-from extended_docx_classes.TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
-from extended_docx_classes.ExtendedRun import ExtendedRun
+from .TourTemplate import TourTemplate
+from .extended_docx_classes.ExtendedCell import ExtendedCell
+from .extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
+from .extended_docx_classes.ExtendedSection import ExtendedSection
+from .extended_docx_classes.ExtendedTable import ExtendedTable
+from .extended_docx_classes.TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
+from .extended_docx_classes.ExtendedRun import ExtendedRun
+from .Task import Task
 
 
 class ReadingTable1Task:
@@ -82,7 +83,7 @@ class ReadingTable1Task:
             raise ValueError("Реализация для фиксированного layout еще не написана")
 
 
-class Reading:
+class Reading(Task):
     name = "Чтение"
     cond = "Познакомьтесь с текстом и выполните задания"
 
@@ -97,13 +98,14 @@ class Reading:
         :param mistake_words: Ошибочное и верные слова в формате (слово, слово)
         """
 
-        self.tour_templ = tour_templ
         self.text = text
         self.matches = matches
         self.questions = questions
         self.word = word
         self.mistake_words = mistake_words
         self.doc = None
+
+        super().__init__(tour_templ)
 
     def make_xml(self):
         pass
@@ -120,8 +122,8 @@ class Reading:
 
         PAR_STYLE = "ReadingTask"
 
-        self.tour_templ.make_docx(doc, self.name, self.cond)
-        doc = self.tour_templ.doc
+        doc = super().make_docx(doc)
+
         ExtendedSection(doc.sections[0]).set_margins(*PG_MAR_HEADER.values())
         ExtendedParagraph(doc.paragraphs[0]).set_spacing(after=0)
 

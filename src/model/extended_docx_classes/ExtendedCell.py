@@ -2,7 +2,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.table import _Cell
 
-from TableHelpClasses import WidthTypes, TblBorder
+from .TableHelpClasses import WidthTypes, TblBorder
 
 
 class ExtendedCell:

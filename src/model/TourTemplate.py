@@ -3,8 +3,8 @@ from datetime import date
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
-from extended_docx_classes.ExtendedSection import ExtendedSection
-from TourData import Forms, Tours
+from .extended_docx_classes.ExtendedSection import ExtendedSection
+from .TourData import Forms, Tours
 
 
 class TourTemplate:

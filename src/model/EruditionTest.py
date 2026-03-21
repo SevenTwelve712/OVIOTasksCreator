@@ -5,13 +5,14 @@ from pathlib import Path
 
 from docx.oxml import OxmlElement, ns
 
-from model.extended_docx_classes.ExtendedSection import ExtendedSection
+from extended_docx_classes.ExtendedSection import ExtendedSection
 from src.model.Task import Task
 from src.model.TourTemplate import TourTemplate
 
 
 class EruditionTest(Task):
     name = "Тест"
+    cond = ""
 
     def __init__(self, questions: dict[str: tuple[list[str], str]], template: TourTemplate):
         """
@@ -20,8 +21,9 @@ class EruditionTest(Task):
         :param template: Шаблон заглавной плашки данного тура олимпиады
         """
         self.questions = questions
-        self.template = template
         self.doc = None
+
+        super().__init__(template)
 
     def make_xml(self):
         pass
@@ -29,8 +31,8 @@ class EruditionTest(Task):
 
     def make_docx(self, doc: Document):
         letters = ['А', 'Б', 'В', 'Г']
-        self.template.make_docx(doc, self.name, "")
-        doc = self.template.doc
+        self.tour_templ.make_docx(doc, self.name, "")
+        doc = self.tour_templ.doc
 
         # Добавляем главную секцию с колонками
         main_sec = doc.add_section(WD_SECTION.CONTINUOUS)

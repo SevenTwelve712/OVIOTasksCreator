@@ -3,9 +3,9 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 from docx.table import Table
 
-from ExtendedCell import ExtendedCell
-from ExtendedParagraph import JcTypes, ExtendedParagraph
-from TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
+from .ExtendedCell import ExtendedCell
+from .ExtendedParagraph import JcTypes, ExtendedParagraph
+from .TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
 
 
 class ExtendedTable:
