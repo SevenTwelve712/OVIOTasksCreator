@@ -4,15 +4,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.text.paragraph import Paragraph
 
+from src.model.extended_docx_classes.data_and_enums import JcTypes, Direction
 
-class JcTypes(Enum):
-    """Класс типов выравниваний параграфа. Варианты:\n
-    1) BOTH -> выравнивание относительно обоих краев
-    2) CENTER -> выравнивание по центру
-    3) END -> выравнивание по левому краю"""
-    BOTH ="both"
-    CENTER = "center"
-    END = "end"
 
 # TODO: проверить, всегда ли надо лезть в xml, нельзя ли где то обойтись вызовами python-docx api
 class ExtendedParagraph:
@@ -52,3 +45,18 @@ class ExtendedParagraph:
             self.fmt.space_before = before
         if after is not None:
             self.fmt.space_after = after
+
+    def set_borders(self, sz: int, space: int, color: str, direction: Direction):
+        pBdr = self._get_or_add_pPr_node("w:pBdr")
+        direct = [dir_ for dir_ in Direction] if direction is Direction.ALL else [direction]
+        for dir_ in direct:
+            elem = OxmlElement(f"w:{dir_.value}")
+
+            for k, v in {
+                "val": "single",
+                "sz": sz,
+                "space": space,
+                "color": color
+            }.items():
+                elem.set(qn(f"w:{k}"), str(v))
+            pBdr.append(elem)

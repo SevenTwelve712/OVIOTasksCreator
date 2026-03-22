@@ -25,7 +25,7 @@ from collections import defaultdict
 from pathlib import Path
 
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from Configs import PathConfig
 from src.model.vendor.complexstring import ComplexString
@@ -167,17 +167,34 @@ class Crossword(object):
         else:
             return True
 
-    # def remove_blank_lines(self):
-    #     for i, row in enumerate(self.best_grid):
-    #         if all(elem == self.empty for elem in row):
-    #             del self.best_grid[i]
-    #             self.rows -= 1
-    #
-    #     for j in self.cols:
-    #         if all(row[j] == self.empty for row in self.best_grid):
-    #             for row in self.best_grid:
-    #                 del row[j]
-    #                 self.cols -= 1
+    def remove_blank_lines(self):
+        # TODO: хорошо бы потестить
+        """
+        Удаляет пустые строки/колонки у кроссворда, пересчитывает координаты слов и количество
+        строк/колонок
+        """
+        bg = self.best_grid
+        bw = self.best_wordlist
+
+        for i, row in enumerate(bg):
+            if all(cell == self.empty for cell in row):
+                del bg[i]
+                self.rows -= 1
+                for word in bw:
+                    if word[2] > i: # y coord
+                        word[2] -= 1
+
+        cols = [[bg[i][j] for i in range(self.rows)] for j in range(self.cols)]
+        del_count = 0
+        for j, col in enumerate(cols):
+            if all(cell == self.empty for cell in col):
+                for row in bg:
+                    del row[j - del_count]
+                del_count += 1
+                self.cols -= 1
+                for word in bw:
+                    if word[3] > j: # x coord, знак больше т.к. идем слева направо
+                        word[3] -= 1
 
     def _cell_must_draw_diag_border(self, coord: tuple[int, int]):
         res = {"lu": False, "ru": False, "ld": False, "rd": False} # left up, right up, left down, right down
@@ -197,6 +214,7 @@ class Crossword(object):
         return res
 
     def gen_img(self, cell_size: int, border_size: int):
+        FONT_SIZE = int(cell_size * 0.75 / 2)
         CELL_BORDER = 2
         BLACK = (0, 0, 0)
         GREY = (191, 191, 191)
@@ -204,10 +222,14 @@ class Crossword(object):
 
         img = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype(str(Path(PathConfig.RESOURCES_DIR, "timesnewromanpsmt.ttf")), size=FONT_SIZE)
 
         borders_inner = []
         borders_outer = []
 
+        print("Список слов:")
+        print(*self.best_wordlist, sep='\n')
+        word_num = 1
         for i, row in enumerate(self.best_grid):
             for j, cell in enumerate(row):
                 x = j * cell_size + border_size
@@ -242,6 +264,21 @@ class Crossword(object):
                     borders_inner.append([(x, y + cell_size), (x + cell_size, y + cell_size)])
                     borders_inner.append([(x + cell_size, y), (x + cell_size, y + cell_size)])
 
+                    for word in self.best_wordlist:
+                        if (i, j) == (word[2], word[3]):
+                            print(f"нарисован номер у {i} x {j} ячейки")
+                            draw.text((x + 3, y + 3), str(word_num), fill=BLACK, font=font)
+                            word.append(word_num)
+                            word_num += 1
+
+        # test
+        for word in self.best_wordlist:
+            if len(word) == 5:
+                i, j = word[2], word[3]
+                print(f"Слово на ({i} x {j}) не имеет номера")
+                print(f"Ячейка пуста: {self.best_grid[i][j] == self.empty}")
+
+
         for coord in borders_outer:
             draw.rectangle(coord, fill=GREY)
         for coord in borders_inner:
@@ -267,6 +304,11 @@ if __name__ == '__main__':
     cross.compute_crossword(0.01)
     print(*cross.best_grid, sep="\n")
     print(cross.best_wordlist)
+    cross.remove_blank_lines()
+    print(f"Cross sizes: {cross.rows} x {cross.cols}")
+    print(*cross.best_grid, sep="\n")
+    print(cross.best_wordlist)
 
     img = cross.gen_img(50, 10)
     img.save(Path(PathConfig.SAVE_DIR, "grid.jpg"))
+    print(cross.best_wordlist)

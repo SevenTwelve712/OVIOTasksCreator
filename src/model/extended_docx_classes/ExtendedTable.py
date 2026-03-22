@@ -5,7 +5,7 @@ from docx.table import Table
 
 from .ExtendedCell import ExtendedCell
 from .ExtendedParagraph import JcTypes, ExtendedParagraph
-from .TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
+from .data_and_enums import WidthTypes, TblBorder, LayoutTypes
 
 
 class ExtendedTable:

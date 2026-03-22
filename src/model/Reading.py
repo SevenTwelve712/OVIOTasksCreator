@@ -9,7 +9,7 @@ from .extended_docx_classes.ExtendedCell import ExtendedCell
 from .extended_docx_classes.ExtendedParagraph import ExtendedParagraph, JcTypes
 from .extended_docx_classes.ExtendedSection import ExtendedSection
 from .extended_docx_classes.ExtendedTable import ExtendedTable
-from .extended_docx_classes.TableHelpClasses import WidthTypes, TblBorder, LayoutTypes
+from .extended_docx_classes.data_and_enums import WidthTypes, TblBorder, LayoutTypes
 from .extended_docx_classes.ExtendedRun import ExtendedRun
 from .Task import Task
 

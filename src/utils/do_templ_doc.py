@@ -128,8 +128,6 @@ def do_template_docx():
         reading_style.font.size = Pt(10)
         styles.append(reading_style)
 
-
-
     # Заменяем язык на русский во всех стилях
     for style in styles:
         style._element.get_or_add_rPr().append(do_rulang_xml())
