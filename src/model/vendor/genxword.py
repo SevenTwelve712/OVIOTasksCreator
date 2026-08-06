@@ -27,12 +27,12 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from Configs import PathConfig
+from src.Configs import PathConfig
 from src.model.vendor.complexstring import ComplexString
 
 
 class Crossword(object):
-    def __init__(self, rows, cols, empty=' ', available_words=[]):
+    def __init__(self, rows, cols, empty=" ", available_words=[]):
         self.rows = rows
         self.cols = cols
         self.empty = empty
@@ -42,7 +42,7 @@ class Crossword(object):
     def prep_grid_words(self):
         self.current_wordlist = []
         self.let_coords.clear()
-        self.grid = [[self.empty]*self.cols for i in range(self.rows)]
+        self.grid = [[self.empty] * self.cols for i in range(self.rows)]
         self.available_words = [word[:2] for word in self.available_words]
         self.first_word(self.available_words[0])
 
@@ -53,24 +53,42 @@ class Crossword(object):
         start_full = float(time.time())
         while (float(time.time()) - start_full) < time_permitted:
             self.prep_grid_words()
-            [self.add_words(word) for i in range(2) for word in self.available_words
-             if word not in self.current_wordlist]
+            [
+                self.add_words(word)
+                for i in range(2)
+                for word in self.available_words
+                if word not in self.current_wordlist
+            ]
             if len(self.current_wordlist) > len(self.best_wordlist):
                 self.best_wordlist = list(self.current_wordlist)
                 self.best_grid = list(self.grid)
             if len(self.best_wordlist) == wordlist_length:
                 break
-        #answer = '\n'.join([''.join(['{} '.format(c) for c in self.best_grid[r]]) for r in range(self.rows)])
-        answer = '\n'.join([''.join([u'{} '.format(c) for c in self.best_grid[r]])
-                            for r in range(self.rows)])
-        return answer + '\n\n' + str(len(self.best_wordlist)) + ' out of ' + str(wordlist_length)
+        # answer = '\n'.join([''.join(['{} '.format(c) for c in self.best_grid[r]]) for r in range(self.rows)])
+        answer = "\n".join(
+            [
+                "".join(["{} ".format(c) for c in self.best_grid[r]])
+                for r in range(self.rows)
+            ]
+        )
+        return (
+            answer
+            + "\n\n"
+            + str(len(self.best_wordlist))
+            + " out of "
+            + str(wordlist_length)
+        )
 
     def get_coords(self, word):
         """Return possible coordinates for each letter."""
         word_length = len(word[0])
         coordlist = []
-        temp_list =  [(l, v) for l, letter in enumerate(word[0])
-                      for k, v in self.let_coords.items() if k == letter]
+        temp_list = [
+            (l, v)
+            for l, letter in enumerate(word[0])
+            for k, v in self.let_coords.items()
+            if k == letter
+        ]
         for coord in temp_list:
             letc = coord[0]
             for item in coord[1]:
@@ -113,12 +131,22 @@ class Crossword(object):
 
     def check_score_horiz(self, word, row, col, word_length, score=1):
         cell_occupied = self.cell_occupied
-        if col and cell_occupied(row, col-1) or col + word_length != self.cols and cell_occupied(row, col + word_length):
+        if (
+            col
+            and cell_occupied(row, col - 1)
+            or col + word_length != self.cols
+            and cell_occupied(row, col + word_length)
+        ):
             return 0
         for letter in word[0]:
             active_cell = self.grid[row][col]
             if active_cell == self.empty:
-                if row + 1 != self.rows and cell_occupied(row+1, col) or row and cell_occupied(row-1, col):
+                if (
+                    row + 1 != self.rows
+                    and cell_occupied(row + 1, col)
+                    or row
+                    and cell_occupied(row - 1, col)
+                ):
                     return 0
             elif active_cell == letter:
                 score += 1
@@ -129,12 +157,22 @@ class Crossword(object):
 
     def check_score_vert(self, word, row, col, word_length, score=1):
         cell_occupied = self.cell_occupied
-        if row and cell_occupied(row-1, col) or row + word_length != self.rows and cell_occupied(row + word_length, col):
+        if (
+            row
+            and cell_occupied(row - 1, col)
+            or row + word_length != self.rows
+            and cell_occupied(row + word_length, col)
+        ):
             return 0
         for letter in word[0]:
             active_cell = self.grid[row][col]
             if active_cell == self.empty:
-                if col + 1 != self.cols and cell_occupied(row, col+1) or col and cell_occupied(row, col-1):
+                if (
+                    col + 1 != self.cols
+                    and cell_occupied(row, col + 1)
+                    or col
+                    and cell_occupied(row, col - 1)
+                ):
                     return 0
             elif active_cell == letter:
                 score += 1
@@ -162,10 +200,7 @@ class Crossword(object):
 
     def cell_occupied(self, row, col):
         cell = self.grid[row][col]
-        if cell == self.empty:
-            return False
-        else:
-            return True
+        return cell != self.empty
 
     def remove_blank_lines(self):
         # TODO: хорошо бы потестить
@@ -181,7 +216,7 @@ class Crossword(object):
                 del bg[i]
                 self.rows -= 1
                 for word in bw:
-                    if word[2] > i: # y coord
+                    if word[2] > i:  # y coord
                         word[2] -= 1
 
         cols = [[bg[i][j] for i in range(self.rows)] for j in range(self.cols)]
@@ -193,23 +228,44 @@ class Crossword(object):
                 del_count += 1
                 self.cols -= 1
                 for word in bw:
-                    if word[3] > j: # x coord, знак больше т.к. идем слева направо
+                    if word[3] > j:  # x coord, знак больше т.к. идем слева направо
                         word[3] -= 1
 
     def _cell_must_draw_diag_border(self, coord: tuple[int, int]):
-        res = {"lu": False, "ru": False, "ld": False, "rd": False} # left up, right up, left down, right down
+        res = {
+            "lu": False,
+            "ru": False,
+            "ld": False,
+            "rd": False,
+        }  # left up, right up, left down, right down
         bg = self.best_grid
         x, y = coord
-        if y == 0 or x == 0 or bg[y - 1][x - 1] == bg[y - 1][x] == bg[y][x - 1] == self.empty:
+        if (
+            y == 0
+            or x == 0
+            or bg[y - 1][x - 1] == bg[y - 1][x] == bg[y][x - 1] == self.empty
+        ):
             res["lu"] = True
 
-        if y == 0 or x == self.cols - 1 or bg[y - 1][x + 1] == bg[y][x + 1] == bg[y - 1][x] == self.empty:
+        if (
+            y == 0
+            or x == self.cols - 1
+            or bg[y - 1][x + 1] == bg[y][x + 1] == bg[y - 1][x] == self.empty
+        ):
             res["ru"] = True
 
-        if y == self.rows - 1 or x == 0 or bg[y + 1][x - 1] == bg[y + 1][x] == bg[y][x - 1] == self.empty:
+        if (
+            y == self.rows - 1
+            or x == 0
+            or bg[y + 1][x - 1] == bg[y + 1][x] == bg[y][x - 1] == self.empty
+        ):
             res["ld"] = True
 
-        if y == self.rows - 1 or x == self.cols - 1 or bg[y + 1][x + 1] == bg[y + 1][x] == bg[y][x + 1] == self.empty:
+        if (
+            y == self.rows - 1
+            or x == self.cols - 1
+            or bg[y + 1][x + 1] == bg[y + 1][x] == bg[y][x + 1] == self.empty
+        ):
             res["rd"] = True
         return res
 
@@ -218,56 +274,95 @@ class Crossword(object):
         CELL_BORDER = 2
         BLACK = (0, 0, 0)
         GREY = (191, 191, 191)
-        width, height = cell_size * self.cols + border_size * 2, cell_size * self.rows + border_size * 2
+
+        width, height = (
+            cell_size * self.cols + border_size * 2,
+            cell_size * self.rows + border_size * 2,
+        )
 
         img = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype(str(Path(PathConfig.RESOURCES_DIR, "timesnewromanpsmt.ttf")), size=FONT_SIZE)
+        font = ImageFont.truetype(
+            str(Path(PathConfig.RESOURCES_DIR, "timesnewromanpsmt.ttf")), size=FONT_SIZE
+        )
 
         borders_inner = []
         borders_outer = []
 
         print("Список слов:")
-        print(*self.best_wordlist, sep='\n')
+        print(*self.best_wordlist, sep="\n")
         word_num = 1
         for i, row in enumerate(self.best_grid):
             for j, cell in enumerate(row):
                 x = j * cell_size + border_size
                 y = i * cell_size + border_size
 
-                if cell != self.empty: # рисуем саму ячейку
-                    if i == 0 or self.best_grid[i - 1][j] == self.empty: # верхняя
+                if cell != self.empty:  # рисуем саму ячейку
+                    if i == 0 or self.best_grid[i - 1][j] == self.empty:  # верхняя
                         borders_inner.append([(x, y), (x + cell_size, y)])
                         borders_outer.append([(x, y - border_size), (x + cell_size, y)])
 
-                    if i == self.rows - 1 or self.best_grid[i + 1][j] == self.empty: # нижняя
-                        borders_outer.append([(x, y + cell_size), (x + cell_size, y + cell_size + border_size)])
+                    if (
+                        i == self.rows - 1 or self.best_grid[i + 1][j] == self.empty
+                    ):  # нижняя
+                        borders_outer.append(
+                            [
+                                (x, y + cell_size),
+                                (x + cell_size, y + cell_size + border_size),
+                            ]
+                        )
 
-                    if j == 0 or self.best_grid[i][j - 1] == self.empty: # левая
+                    if j == 0 or self.best_grid[i][j - 1] == self.empty:  # левая
                         borders_outer.append([(x - border_size, y), (x, y + cell_size)])
                         borders_inner.append([(x, y), (x, y + cell_size)])
 
-                    if j == self.cols - 1 or self.best_grid[i][j + 1] == self.empty: # правая
-                        borders_outer.append([(x + cell_size, y), (x + cell_size + border_size, y + cell_size)])
+                    if (
+                        j == self.cols - 1 or self.best_grid[i][j + 1] == self.empty
+                    ):  # правая
+                        borders_outer.append(
+                            [
+                                (x + cell_size, y),
+                                (x + cell_size + border_size, y + cell_size),
+                            ]
+                        )
 
                     # Добавляем диагональные границы
-                    diag_borders = ([(x - border_size, y - border_size), (x, y)],
-                                    [ (x + cell_size, y - border_size), (x + cell_size + border_size, y)],
-                                    [(x - border_size, y + cell_size), (x, y + cell_size + border_size)],
-                                    [ (x + cell_size, y + cell_size), (x + cell_size + border_size, y + cell_size + border_size)])
+                    diag_borders = (
+                        [(x - border_size, y - border_size), (x, y)],
+                        [
+                            (x + cell_size, y - border_size),
+                            (x + cell_size + border_size, y),
+                        ],
+                        [
+                            (x - border_size, y + cell_size),
+                            (x, y + cell_size + border_size),
+                        ],
+                        [
+                            (x + cell_size, y + cell_size),
+                            (x + cell_size + border_size, y + cell_size + border_size),
+                        ],
+                    )
                     # left up, right up, left down, right down
-                    for border, need_to_draw in zip(diag_borders, self._cell_must_draw_diag_border((j, i)).values()):
+                    for border, need_to_draw in zip(
+                        diag_borders, self._cell_must_draw_diag_border((j, i)).values()
+                    ):
                         if need_to_draw:
                             borders_outer.append(border)
 
                     # нижнюю и правую границы ячейки рисуем в любом случае
-                    borders_inner.append([(x, y + cell_size), (x + cell_size, y + cell_size)])
-                    borders_inner.append([(x + cell_size, y), (x + cell_size, y + cell_size)])
+                    borders_inner.append(
+                        [(x, y + cell_size), (x + cell_size, y + cell_size)]
+                    )
+                    borders_inner.append(
+                        [(x + cell_size, y), (x + cell_size, y + cell_size)]
+                    )
 
                     for word in self.best_wordlist:
                         if (i, j) == (word[2], word[3]):
                             print(f"нарисован номер у {i} x {j} ячейки")
-                            draw.text((x + 3, y + 3), str(word_num), fill=BLACK, font=font)
+                            draw.text(
+                                (x + 3, y + 3), str(word_num), fill=BLACK, font=font
+                            )
                             word.append(word_num)
                             word_num += 1
 
@@ -278,7 +373,6 @@ class Crossword(object):
                 print(f"Слово на ({i} x {j}) не имеет номера")
                 print(f"Ячейка пуста: {self.best_grid[i][j] == self.empty}")
 
-
         for coord in borders_outer:
             draw.rectangle(coord, fill=GREY)
         for coord in borders_inner:
@@ -286,18 +380,14 @@ class Crossword(object):
 
         return img
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     ROWS = 10
     COLS = 10
-    words = (
-        "word",
-        "slut",
-        "blue",
-        "boobies",
-        "inheritance",
-        "tango",
-        "permitted"
-    )
+    words = ("word", "slut", "blue", "boobies", "inheritance", "tango", "permitted")
+
+    words = [[ComplexString(line.upper()), line] for line in words]
+    words = ("word", "slut", "blue", "boobies", "inheritance", "tango", "permitted")
 
     words = [[ComplexString(line.upper()), line] for line in words]
     cross = Crossword(ROWS, COLS, available_words=words)

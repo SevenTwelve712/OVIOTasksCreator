@@ -1,17 +1,17 @@
 from enum import EnumType
+from io import BytesIO
 from xml.dom.minidom import Document
 
 from docx.enum.section import WD_SECTION
+from docx.shared import Emu, Inches, Mm
 
-from src.model.Task import Task
-from src.model.TourTemplate import TourTemplate
+from src.model.extended_docx_classes.data_and_enums import Direction, JcTypes
 from src.model.extended_docx_classes.ExtendedParagraph import ExtendedParagraph
 from src.model.extended_docx_classes.ExtendedSection import ExtendedSection
-from src.model.extended_docx_classes.data_and_enums import Direction, JcTypes
+from src.model.Task import Task
+from src.model.TourTemplate import TourTemplate
 from src.model.vendor.complexstring import ComplexString
 from src.model.vendor.genxword import Crossword
-
-from io import BytesIO
 
 
 class HeightTypes(EnumType):
@@ -24,10 +24,17 @@ class OVIOCrossword(Task):
     name = "Кроссворд"
     cond = ""
 
-    CELL_SIZE = 30 # размер одной ячейки кроссворда в px для генерации jpg
-    BORDER_SIZE = 5 # толщина границы вокруг каждой ячейки в px
+    CELL_SIZE = Mm(8).emu  # размер одной ячейки кроссворда в emu для генерации jpg
+    BORDER_SIZE = Mm(0.3).emu  # толщина границы вокруг каждой ячейки в emu
+    DPI = 300
 
-    def __init__(self, words: list[tuple[str, str]], max_height: int, height_type: HeightTypes, tour_template: TourTemplate):
+    def __init__(
+        self,
+        words: list[tuple[str, str]],
+        max_height: int,
+        height_type: HeightTypes,
+        tour_template: TourTemplate,
+    ):
         """
         Класс задания кроссворд
         :param words: слова в формате списка из множеств (слово, описание)
@@ -43,14 +50,32 @@ class OVIOCrossword(Task):
         else:
             self.max_height = max_height
 
-        self._words_clues = [[ComplexString(word.upper()), clue] for word, clue in words]
+        self._words_clues = [
+            [ComplexString(word.upper()), clue] for word, clue in words
+        ]
 
     def _px_to_cells(self, px_size: int):
-        return int(px_size / self.CELL_SIZE - self.BORDER_SIZE * 2)
+        cell_size_px = self.emu_to_pixels(self.CELL_SIZE, self.DPI)
+        border_size_px = self.emu_to_pixels(self.BORDER_SIZE, self.DPI)
+        res = int(px_size / cell_size_px - border_size_px * 2)
+        if res <= 0:
+            raise ValueError("CELL_SIZE and BORDER_SIZE are not compatible")
+        else:
+            return res
+
+    def emu_to_pixels(self, emu: int, dpi: int) -> int:
+        return int(Emu(emu).inches * dpi)
 
     def make_docx(self, doc: Document):
-        SECT_MAR = {"top": 250, "bottom": 250, "left": 720, "right": 720, "header": 708, "footer": 339,
-                    "gutter": 0}
+        SECT_MAR = {
+            "top": 250,
+            "bottom": 250,
+            "left": 720,
+            "right": 720,
+            "header": 708,
+            "footer": 339,
+            "gutter": 0,
+        }
         CROSS_TIME_GENERATING = 0.02
         STYLE = "ReadingTask"
         doc = super().make_docx(doc)
@@ -62,18 +87,25 @@ class OVIOCrossword(Task):
         ExtendedSection(img_sec).set_margins(**SECT_MAR)
 
         # generating crossword
-        COLS = self._px_to_cells(ExtendedSection(img_sec).get_text_area_width() / 9525)
+        emu_width = ExtendedSection(img_sec).get_text_area_width()
+        COLS = self._px_to_cells(self.emu_to_pixels(emu_width, self.DPI))
         ROWS = self.max_height
         print(COLS, ROWS)
         cross = Crossword(ROWS, COLS, available_words=self._words_clues)
         cross.compute_crossword(CROSS_TIME_GENERATING)
+        print("Crossword computed")
         cross.remove_blank_lines()
 
-        img = cross.gen_img(self.CELL_SIZE, self.BORDER_SIZE)
+        print("Start generating image")
+        img = cross.gen_img(
+            self.emu_to_pixels(self.CELL_SIZE, self.DPI),
+            self.emu_to_pixels(self.BORDER_SIZE, self.DPI),
+        )
+        print("Image generated")
         img_bytes = BytesIO()
         img.save(img_bytes, format="JPeG")
 
-        doc.add_picture(img_bytes)
+        doc.add_picture(img_bytes, width=Emu(emu_width))
 
         # =============================
         # Do clues section
@@ -100,7 +132,7 @@ class OVIOCrossword(Task):
         ExtendedParagraph(hor_clues).set_jc(JcTypes.BOTH)
         for word in words:
             word, clue, x, y, align, num = tuple(word)
-            if align == 1: # vertical words
+            if align == 1:  # vertical words
                 continue
             r = hor_clues.add_run(f"{num}. {clue}")
             r.add_break()
