@@ -1,6 +1,6 @@
 {
   "venvPath": ".",
-  "venv": "venv",
+  "venv": ".venv",
   "include": [
     "src",
     "test"
@@ -8,7 +8,7 @@
   "exclude": [
     "**/node_modules",
     "**/__pycache__",
-    "venv"
+    ".venv"
   ],
   "executionEnvironments": [
     {

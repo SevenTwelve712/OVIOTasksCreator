@@ -19,11 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with genxword.  If not, see <http://www.gnu.org/licenses/gpl.html>.
 
-import random, time, json
-from operator import itemgetter
+from random import randint, randrange
+import time
 from collections import defaultdict
+from operator import itemgetter
 from pathlib import Path
-
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -31,7 +31,7 @@ from src.Configs import PathConfig
 from src.model.vendor.complexstring import ComplexString
 
 
-class Crossword(object):
+class Crossword:
     def __init__(self, rows, cols, empty=" ", available_words=[]):
         self.rows = rows
         self.cols = cols
@@ -39,12 +39,19 @@ class Crossword(object):
         self.available_words = available_words
         self.let_coords = defaultdict(list)
 
+    def validate(self):
+        for word in self.available_words:
+            if len(word) < max(self.rows, self.cols):
+                return False
+        return True
+
     def prep_grid_words(self):
         self.current_wordlist = []
         self.let_coords.clear()
         self.grid = [[self.empty] * self.cols for i in range(self.rows)]
         self.available_words = [word[:2] for word in self.available_words]
-        self.first_word(self.available_words[0])
+        if not self.first_word(self.available_words[0]):
+            return False
 
     def compute_crossword(self, time_permitted=1.00):
         self.best_wordlist = []
@@ -52,7 +59,8 @@ class Crossword(object):
         time_permitted = float(time_permitted)
         start_full = float(time.time())
         while (float(time.time()) - start_full) < time_permitted:
-            self.prep_grid_words()
+            if not self.prep_grid_words():
+                return False
             [
                 self.add_words(word)
                 for i in range(2)
@@ -64,20 +72,8 @@ class Crossword(object):
                 self.best_grid = list(self.grid)
             if len(self.best_wordlist) == wordlist_length:
                 break
-        # answer = '\n'.join([''.join(['{} '.format(c) for c in self.best_grid[r]]) for r in range(self.rows)])
-        answer = "\n".join(
-            [
-                "".join(["{} ".format(c) for c in self.best_grid[r]])
-                for r in range(self.rows)
-            ]
-        )
-        return (
-            answer
-            + "\n\n"
-            + str(len(self.best_wordlist))
-            + " out of "
-            + str(wordlist_length)
-        )
+
+        return len(self.best_wordlist) == wordlist_length
 
     def get_coords(self, word):
         """Return possible coordinates for each letter."""
@@ -111,15 +107,34 @@ class Crossword(object):
             return
 
     def first_word(self, word):
-        """Place the first word at a random position in the grid."""
-        vertical = random.randrange(0, 2)
-        if vertical:
-            row = random.randrange(0, self.rows - len(word[0]))
-            col = random.randrange(0, self.cols)
+        """Place the first word at a random position in the grid.
+        If first word cannot be placed than swap first and near word and try again
+        Return true on success else false"""
+        can_be_vert = (self.rows - len(word[0])) > 0
+        can_be_hor = (self.cols - len(word[0])) > 0
+
+        if not can_be_hor and not can_be_vert:
+            return False
+
+        elif not can_be_hor:
+            vertical = True
+
+        elif not can_be_vert:
+            vertical = False
+
         else:
-            row = random.randrange(0, self.rows)
-            col = random.randrange(0, self.cols - len(word[0]))
+            vertical = bool(randint(0, 2))
+
+        if vertical:
+            row = randrange(0, self.rows - len(word[0]))
+            col = randrange(0, self.cols)
+
+        else:
+            row = randrange(0, self.rows)
+            col = randrange(0, self.cols - len(word[0]))
+
         self.set_word(word, row, col, vertical)
+        return True
 
     def add_words(self, word):
         """Add the rest of the words to the grid."""
