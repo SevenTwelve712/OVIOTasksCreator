@@ -4,7 +4,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.text.paragraph import Paragraph
 
-from src.model.extended_docx_classes.data_and_enums import JcTypes, Direction
+from model.extended_docx_classes.data_and_enums import JcTypes, Direction
 
 
 # TODO: проверить, всегда ли надо лезть в xml, нельзя ли где то обойтись вызовами python-docx api
@@ -25,7 +25,7 @@ class ExtendedParagraph:
         """Задает выравнивание в параграфе"""
         self._get_or_add_pPr_node("w:jc").set(qn("w:val"), jc_type.value)
 
-    def set_indent(self, right: int=None, left: int=None, first_line: int=None):
+    def set_indent(self, right: int = None, left: int = None, first_line: int = None):
         """Задает отступ строки от края родителя, значения принимаются в pt"""
         ind = self._get_or_add_pPr_node("w:ind")
         if right is not None:
@@ -39,8 +39,7 @@ class ExtendedParagraph:
         self.fmt.space_after = 0
         self.fmt.space_before = 0
 
-
-    def set_spacing(self, before: int=None, after: int=None):
+    def set_spacing(self, before: int = None, after: int = None):
         if before is not None:
             self.fmt.space_before = before
         if after is not None:
@@ -48,7 +47,9 @@ class ExtendedParagraph:
 
     def set_borders(self, sz: int, space: int, color: str, direction: Direction):
         pBdr = self._get_or_add_pPr_node("w:pBdr")
-        direct = [dir_ for dir_ in Direction] if direction is Direction.ALL else [direction]
+        direct = (
+            [dir_ for dir_ in Direction] if direction is Direction.ALL else [direction]
+        )
         for dir_ in direct:
             elem = OxmlElement(f"w:{dir_.value}")
 
@@ -56,7 +57,7 @@ class ExtendedParagraph:
                 "val": "single",
                 "sz": sz,
                 "space": space,
-                "color": color
+                "color": color,
             }.items():
                 elem.set(qn(f"w:{k}"), str(v))
             pBdr.append(elem)

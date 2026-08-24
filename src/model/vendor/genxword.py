@@ -27,8 +27,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from src.Configs import PathConfig
-from src.model.vendor.complexstring import ComplexString
+from Configs import PathConfig
+from model.vendor.complexstring import ComplexString
 
 
 class Crossword:
@@ -41,7 +41,7 @@ class Crossword:
 
     def validate(self):
         for word in self.available_words:
-            if len(word) < max(self.rows, self.cols):
+            if len(word[0]) > max(self.rows, self.cols):
                 return False
         return True
 
@@ -50,8 +50,7 @@ class Crossword:
         self.let_coords.clear()
         self.grid = [[self.empty] * self.cols for i in range(self.rows)]
         self.available_words = [word[:2] for word in self.available_words]
-        if not self.first_word(self.available_words[0]):
-            return False
+        return self.first_word(self.available_words[0])
 
     def compute_crossword(self, time_permitted=1.00):
         self.best_wordlist = []
@@ -110,10 +109,11 @@ class Crossword:
         """Place the first word at a random position in the grid.
         If first word cannot be placed than swap first and near word and try again
         Return true on success else false"""
-        can_be_vert = (self.rows - len(word[0])) > 0
-        can_be_hor = (self.cols - len(word[0])) > 0
 
-        if not can_be_hor and not can_be_vert:
+        can_be_vert = self.rows - len(word[0]) >= 0
+        can_be_hor = self.cols - len(word[0]) >= 0
+
+        if not can_be_hor and not can_be_vert:  # checks in validate()
             return False
 
         elif not can_be_hor:
@@ -218,7 +218,6 @@ class Crossword:
         return cell != self.empty
 
     def remove_blank_lines(self):
-        # TODO: хорошо бы потестить
         """
         Удаляет пустые строки/колонки у кроссворда, пересчитывает координаты слов и количество
         строк/колонок
@@ -226,24 +225,27 @@ class Crossword:
         bg = self.best_grid
         bw = self.best_wordlist
 
-        for i, row in enumerate(bg):
-            if all(cell == self.empty for cell in row):
+        # Удаление пустых строк (идем с конца в начало)
+        for i in range(len(bg) - 1, -1, -1):
+            if all(cell == self.empty for cell in bg[i]):
                 del bg[i]
                 self.rows -= 1
                 for word in bw:
                     if word[2] > i:  # y coord
                         word[2] -= 1
 
+        # Удаление пустых колонок
         cols = [[bg[i][j] for i in range(self.rows)] for j in range(self.cols)]
         del_count = 0
-        for j, col in enumerate(cols):
-            if all(cell == self.empty for cell in col):
+        for j in range(len(cols)):
+            # Проверяем, пустая ли колонка
+            if all(cell == self.empty for cell in cols[j]):
                 for row in bg:
                     del row[j - del_count]
                 del_count += 1
                 self.cols -= 1
                 for word in bw:
-                    if word[3] > j:  # x coord, знак больше т.к. идем слева направо
+                    if word[3] > (j - del_count):  # x coord
                         word[3] -= 1
 
     def _cell_must_draw_diag_border(self, coord: tuple[int, int]):

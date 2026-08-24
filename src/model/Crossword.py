@@ -1,17 +1,17 @@
 from enum import EnumType
 from io import BytesIO
-from xml.dom.minidom import Document
+from docx.document import Document
 
 from docx.enum.section import WD_SECTION
 from docx.shared import Emu, Inches, Mm
 
-from src.model.extended_docx_classes.data_and_enums import Direction, JcTypes
-from src.model.extended_docx_classes.ExtendedParagraph import ExtendedParagraph
-from src.model.extended_docx_classes.ExtendedSection import ExtendedSection
-from src.model.Task import Task
-from src.model.TourTemplate import TourTemplate
-from src.model.vendor.complexstring import ComplexString
-from src.model.vendor.genxword import Crossword
+from model.extended_docx_classes.data_and_enums import Direction, JcTypes
+from model.extended_docx_classes.ExtendedParagraph import ExtendedParagraph
+from model.extended_docx_classes.ExtendedSection import ExtendedSection
+from model.Task import Task
+from model.TourTemplate import TourTemplate
+from model.vendor.complexstring import ComplexString
+from model.vendor.genxword import Crossword
 
 
 class HeightTypes(EnumType):
@@ -90,15 +90,27 @@ class OVIOCrossword(Task):
         emu_width = ExtendedSection(img_sec).get_text_area_width()
         COLS = self._px_to_cells(self.emu_to_pixels(emu_width, self.DPI))
         ROWS = self.max_height
-        print(COLS, ROWS)
+        print(f"grid sizes: {COLS} x {ROWS}")
         cross = Crossword(ROWS, COLS, available_words=self._words_clues)
+        if not cross.validate():
+            return
         res = cross.compute_crossword(CROSS_TIME_GENERATING)
-        while not res and self.CELL_SIZE >= 6:
-            self.CELL_SIZE -= 1
-            self.BORDER_SIZE -= 0.05
+        iter = 0  # TODO: delete iter
+        while not res and self.CELL_SIZE >= Mm(5):
+            print(iter)
+            iter += 1
+            self.CELL_SIZE -= Mm(1)
+            self.BORDER_SIZE -= Mm(0.05)
+            COLS = self._px_to_cells(self.emu_to_pixels(emu_width, self.DPI))
+            ROWS = self.max_height
+
+            cross = Crossword(ROWS, COLS, available_words=self._words_clues)
+            if not cross.validate():
+                return
             res = cross.compute_crossword(CROSS_TIME_GENERATING)
 
         print("Crossword computed" if res else "Too much words, failure")
+        print(*cross.best_grid, sep="\n")
         cross.remove_blank_lines()
 
         print("Start generating image")
@@ -124,6 +136,8 @@ class OVIOCrossword(Task):
             try:
                 print(word[5], word[4])
             except IndexError:
+                print(*cross.best_wordlist, sep="\n")
+                print(*cross.best_grid, sep="\n")
                 print(word)
                 print("Error!!")
                 raise IndexError

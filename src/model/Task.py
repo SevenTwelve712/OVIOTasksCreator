@@ -2,7 +2,7 @@ from pathlib import Path
 
 from docx import Document
 
-from src.model.TourTemplate import TourTemplate
+from model.TourTemplate import TourTemplate
 
 
 class Task:
@@ -11,7 +11,6 @@ class Task:
 
     def __init__(self, tour_template: TourTemplate):
         self.tour_templ = tour_template
-
 
     def save_docx(self, path: Path):
         pass
@@ -22,4 +21,3 @@ class Task:
     def make_docx(self, doc: Document):
         self.tour_templ.make_docx(doc, self.name, self.cond)
         return self.tour_templ.doc
-

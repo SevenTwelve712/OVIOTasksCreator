@@ -2,8 +2,8 @@ from pathlib import Path
 
 from docx import Document
 
-from src.Configs import PathConfig
-from src.model.Crossword import OVIOCrossword, HeightTypes
+from Configs import PathConfig
+from model.Crossword import OVIOCrossword, HeightTypes
 from tests import tour_templ_ex
 
 words = [
@@ -55,4 +55,5 @@ def crossword_test():
 
 
 if __name__ == "__main__":
-    crossword_test()
+    for i in range(1000):
+        crossword_test()
