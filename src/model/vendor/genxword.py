@@ -19,12 +19,14 @@
 # You should have received a copy of the GNU General Public License
 # along with genxword.  If not, see <http://www.gnu.org/licenses/gpl.html>.
 
-from random import randint, randrange
 import time
 from collections import defaultdict
+from itertools import chain
 from operator import itemgetter
 from pathlib import Path
+from random import randint, randrange, shuffle
 
+from loguru import logger
 from PIL import Image, ImageDraw, ImageFont
 
 from Configs import PathConfig
@@ -42,6 +44,9 @@ class Crossword:
     def validate(self):
         for word in self.available_words:
             if len(word[0]) > max(self.rows, self.cols):
+                logger.warning(
+                    f"{word[0]} is too big for {self.cols} x {self.rows} grid"
+                )
                 return False
         return True
 
@@ -50,6 +55,20 @@ class Crossword:
         self.let_coords.clear()
         self.grid = [[self.empty] * self.cols for i in range(self.rows)]
         self.available_words = [word[:2] for word in self.available_words]
+        parts = 3
+        words = []
+        for i in range(parts):
+            start = len(self.available_words) // parts * i
+            end = (
+                len(self.available_words)
+                if i == parts - 1
+                else len(self.available_words) // parts * (i + 1)
+            )
+            part = self.available_words[start:end]
+            shuffle(part)
+            words.append(part)
+
+        self.available_words = list(chain(*words))
         return self.first_word(self.available_words[0])
 
     def compute_crossword(self, time_permitted=1.00):
@@ -59,6 +78,9 @@ class Crossword:
         start_full = float(time.time())
         while (float(time.time()) - start_full) < time_permitted:
             if not self.prep_grid_words():
+                logger.info(
+                    "exiting compute_crossword because prep_grid_words return false"
+                )
                 return False
             [
                 self.add_words(word)
@@ -68,10 +90,11 @@ class Crossword:
             ]
             if len(self.current_wordlist) > len(self.best_wordlist):
                 self.best_wordlist = list(self.current_wordlist)
-                self.best_grid = list(self.grid)
+                self.best_grid = [row[:] for row in self.grid]
             if len(self.best_wordlist) == wordlist_length:
                 break
 
+        logger.info("return computing results from func compute_crossword")
         return len(self.best_wordlist) == wordlist_length
 
     def get_coords(self, word):
@@ -110,10 +133,11 @@ class Crossword:
         If first word cannot be placed than swap first and near word and try again
         Return true on success else false"""
 
-        can_be_vert = self.rows - len(word[0]) >= 0
-        can_be_hor = self.cols - len(word[0]) >= 0
+        can_be_vert = self.rows - len(word[0]) > 0
+        can_be_hor = self.cols - len(word[0]) > 0
 
         if not can_be_hor and not can_be_vert:  # checks in validate()
+            logger.warning(f"word {word} cant be vertical or horizontal")
             return False
 
         elif not can_be_hor:
@@ -288,7 +312,6 @@ class Crossword:
 
     def gen_img(self, cell_size: int, border_size: int):
         FONT_SIZE = int(cell_size * 0.75 / 2)
-        CELL_BORDER = 2
         BLACK = (0, 0, 0)
         GREY = (191, 191, 191)
 
@@ -306,8 +329,6 @@ class Crossword:
         borders_inner = []
         borders_outer = []
 
-        print("Список слов:")
-        print(*self.best_wordlist, sep="\n")
         word_num = 1
         for i, row in enumerate(self.best_grid):
             for j, cell in enumerate(row):
@@ -375,25 +396,32 @@ class Crossword:
                     )
 
                     for word in self.best_wordlist:
-                        if (i, j) == (word[2], word[3]):
-                            print(f"нарисован номер у {i} x {j} ячейки")
+                        if (i, j) != (word[2], word[3]):
+                            continue
+
+                        # проверим, нет ли слова начинающегося в той же ячейке
+                        already_exists = False
+                        for word1 in self.best_wordlist:
+                            if (
+                                (word[2], word[3]) == (word1[2], word1[3])
+                                and word[0] != word1[0]
+                                and len(word1) == 6
+                            ):
+                                word.append(word1[5])
+                                already_exists = True
+                                break
+
+                        if not already_exists:
                             draw.text(
                                 (x + 3, y + 3), str(word_num), fill=BLACK, font=font
                             )
                             word.append(word_num)
                             word_num += 1
 
-        # test
-        for word in self.best_wordlist:
-            if len(word) == 5:
-                i, j = word[2], word[3]
-                print(f"Слово на ({i} x {j}) не имеет номера")
-                print(f"Ячейка пуста: {self.best_grid[i][j] == self.empty}")
-
         for coord in borders_outer:
             draw.rectangle(coord, fill=GREY)
         for coord in borders_inner:
-            draw.line(coord, fill=BLACK, width=CELL_BORDER)
+            draw.line(coord, fill=BLACK, width=border_size)
 
         return img
 
