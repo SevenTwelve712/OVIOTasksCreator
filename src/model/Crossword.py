@@ -14,6 +14,7 @@ from model.TourTemplate import TourTemplate
 from model.vendor.complexstring import ComplexString
 from model.vendor.genxword import Crossword
 from loguru import logger
+# TODO: clean logs, do feature when user can generate crossword with his own params not only auto
 
 
 class HeightTypes(EnumType):
